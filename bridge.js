@@ -39,7 +39,7 @@ const server = http.createServer((req, res) => {
   if (url.pathname.startsWith('/mini/')) { if (cloud) return json(404, { error: 'El flotante de Windows solo esta disponible en escritorio.' }); miniRoute(req, res, url, json); return; }
   if (req.method !== 'GET') return json(405, { error: 'Metodo no permitido.' });
   if (url.pathname === '/status') return json(200, {
-    status: 'ready', version: '7.0', cloud, onlineAvailable: true, miniAvailable: !cloud, pid: process.pid,
+    status: 'ready', version: '7.1', cloud, onlineAvailable: true, miniAvailable: !cloud, pid: process.pid,
     ytDlpAvailable: fs.existsSync(downloader),
     mp3Available: fs.existsSync(path.join(ffmpegDir, runtime.ffmpegName)),
     activeDownloads, ...onlineRoute.status()
@@ -92,7 +92,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (!fs.existsSync(path.join(ffmpegDir, 'ffmpeg.exe'))) return json(503, { error: 'Falta el conversor MP3 en la carpeta tools de Aura.' });
+  if (!fs.existsSync(path.join(ffmpegDir, runtime.ffmpegName))) return json(503, { error: cloud ? 'El conversor MP3 no esta instalado en el servidor.' : 'Falta el conversor MP3 en la carpeta tools de Aura.' });
   if (activeDownloads >= 2) return json(429, { error: 'Ya hay dos descargas en curso. Espera a que terminen.' });
   const id = 'audio_' + randomUUID();
   const output = path.join(tempDir, id + '.mp3');
@@ -126,7 +126,8 @@ const server = http.createServer((req, res) => {
     if (failed || res.destroyed) { cleanup(); return; }
     if (code !== 0 || !fs.existsSync(output)) {
       console.error('[AURA descarga]', stderr);
-      json(502, { error: timedOut ? 'La descarga supero el tiempo maximo.' : (stderr.trim().slice(-1200) || 'No se pudo convertir el video a MP3.') });
+      const blocked = /sign in to confirm|not a bot|confirm you.re not a bot/i.test(stderr);
+      json(502, { code: blocked ? 'YOUTUBE_VERIFICATION_REQUIRED' : 'DOWNLOAD_FAILED', error: blocked ? 'YouTube exige una verificacion para descargar este video desde el servidor. Puedes escucharlo en el reproductor de YouTube o importar un archivo local.' : timedOut ? 'La descarga supero el tiempo maximo.' : (stderr.trim().slice(-1200) || 'No se pudo convertir el video a MP3.') });
       cleanup(); return;
     }
     res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Content-Length': fs.statSync(output).size });
@@ -139,3 +140,5 @@ const server = http.createServer((req, res) => {
 });
 server.on('error', error => { console.error('[AURA Bridge]', error.message); process.exitCode = 1; });
 server.listen(PORT, runtime.host, () => console.log('[AURA Bridge] Motor activo en ' + runtime.host + ':' + PORT));
+
+
