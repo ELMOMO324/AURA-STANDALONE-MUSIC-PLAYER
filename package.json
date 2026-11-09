@@ -1,0 +1,8 @@
+{
+  "name": "aura-web-motor",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Motor de busqueda, transmision e importacion de YouTube para Aura",
+  "scripts": { "start": "node bridge.js", "check": "node --check bridge.js && node --check online-bridge.js && node --check server-runtime.js" },
+  "engines": { "node": ">=24" }
+}

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: aura-motor
+    runtime: docker
+    plan: free
+    healthCheckPath: /status
+    envVars:
+      - key: AURA_CLOUD
+        value: "1"
+      - key: ALLOWED_ORIGINS
+        sync: false
